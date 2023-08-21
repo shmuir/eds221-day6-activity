@@ -1,0 +1,123 @@
+---
+title: "Day 6 Activity"
+date: "21 August 2023"
+format: html
+editor: visual
+execute: 
+  warning: false
+---
+
+## *Data Organization in Spreadsheets*
+
+- people are often not consistent with their naming
+- choose clear names that are easy for a computer to read as well
+- YYYY-MM-DD is a good standard
+- don't have empty cells- put NA (and be consistent with how you note NAs)
+- don't do calculations in the raw excel file
+
+
+## SBC Lobsters
+
+```{r}
+library(tidyverse)
+library(here)
+```
+
+```{r}
+lobster <- read_csv(here("data", "Lobster_Abundance_All_Years_20210412.csv"), na = c("-99999", "")) %>%
+  janitor::clean_names() %>%
+  uncount(count)
+```
+
+```{r}
+mean_count <- lobster %>%
+  group_by(site, year) %>%
+  summarise(mean = mean(size_mm),
+            count = n())
+```
+
+```{r}
+ggplot(mean_count, aes(year, count, fill = site)) +
+  geom_bar(stat = "Identity") +
+  facet_wrap(~site) +
+  theme_linedraw() +
+  theme(legend.position = "none")
+```
+
+#### Legal Lobsters
+
+```{r}
+lobster_2020 <- lobster %>%
+  filter(year == 2020)
+
+lobster_2020_legal <- lobster_2020 %>%
+  group_by(site) %>%
+  mutate(legal = case_when(size_mm > 79.76 ~ "yes",
+                           size_mm <= 79.76 ~ "no")) %>%
+  count(legal)
+```
+
+```{r}
+ggplot(lobster_2020_legal, aes(site, n, fill = legal)) +
+  geom_col(position = "fill") +
+  theme_linedraw()
+```
+
+#### Lobster Wrangling
+
+```{r}
+ex_a <- lobster %>%
+  filter(site %in% c("IVEE", "CARP", "NAPL"))
+
+ex_b <- lobster %>%
+  filter(month == 8)
+
+ex_c <- lobster %>%
+  filter(site == "AQUE" | size_mm > 70)
+
+ex_d <- lobster %>%
+  filter(site != "NAPL")
+```
+
+#### group_by() and summarise() practice
+
+```{r}
+lobster %>%
+  group_by(site) %>%
+  summarise(mean = mean(size_mm, na.rm = TRUE),
+            sd = sd(size_mm, na.rm = TRUE))
+
+lobster %>%
+  group_by(site, month) %>%
+  summarise(max_length = max(size_mm, na.rm = TRUE))
+```
+
+#### mutate()
+
+```{r}
+size_conv <- lobster %>%
+  mutate(size_cm = size_mm / 10)
+
+lobster %>%
+  mutate(site = tolower(site))
+
+lobster %>%
+  mutate(area = as.character(area))
+```
+
+#### case_when()
+
+```{r}
+size_bin <- lobster %>%
+  mutate(size_bin = case_when(size_mm <= 70 ~ "small",
+                              size_mm > 70 ~ "large"))
+size_bin
+
+lobster %>%
+  mutate(designation = case_when(site == "IVEE" | site == "NAPL" ~ "MPA",
+                                 TRUE ~ "not MPA"))
+```
+
+
+
+
